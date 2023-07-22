@@ -23,16 +23,7 @@ public class AuthEndpoint : IEndpoint
         [FromBody] LoginUser.Request request,
         CancellationToken cancellationToken)
     {
-        var validator = new LoginUser.RequestValidator();
-        var validationResult = await validator.ValidateAsync(request, cancellationToken);
-        if (!validationResult.IsValid)
-        {
-            return Results.BadRequest(
-                new Result<LoginUser.Response>(ErrorType.Validation,
-                    validationResult.Errors.Select(x => x.ErrorMessage)));
-        }
-
-        var result = await IdentityService.LoginAsync(request);
+        var result = await IdentityService.LoginAsync(request, cancellationToken);
             
         return EndpointHelpers.MapResultToHttpResponse(result);
     }
@@ -41,22 +32,8 @@ public class AuthEndpoint : IEndpoint
         [FromBody] CreateUser.Request request,
         CancellationToken cancellationToken)
     {
-        var validator = new CreateUser.RequestValidator();
-        var validationResult = await validator.ValidateAsync(request, cancellationToken);
-        if (!validationResult.IsValid)
-        {
-            var ErrorResponse = new Result<LoginUser.Response>(
-                ErrorType.Validation,
-                validationResult.Errors.Select(x => x.ErrorMessage));
-            return EndpointHelpers.MapResultToHttpResponse(ErrorResponse);
-        }
+        var result = await IdentityService.RegisterAsync(request, cancellationToken);
 
-        var result = await IdentityService.RegisterAsync(request);
-
-        if (result.IsSuccess)
-        {
-            return Results.Ok();
-        }
         return EndpointHelpers.MapResultToHttpResponse(result);
     }
 }

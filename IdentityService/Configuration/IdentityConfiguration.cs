@@ -28,16 +28,7 @@ internal static class IdentityConfiguration
 
         var jwtSettings = new JwtSettings();
         configuration.Bind(nameof(jwtSettings), jwtSettings);
-        jwtSettings.ValidationParameters = new TokenValidationParameters()
-        {
-            IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.ASCII.GetBytes(jwtSettings.Secret)),
-            ValidateIssuerSigningKey = true,
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            RequireExpirationTime = true,
-            ValidateLifetime = true
-        };
+        jwtSettings.ValidationParameters = GetTokenValidationParameters(jwtSettings.Secret);
         services.AddSingleton(jwtSettings);
 
         if (string.IsNullOrEmpty(jwtSettings.Secret))
@@ -66,5 +57,19 @@ internal static class IdentityConfiguration
     {
         public string Secret { get; set; } = null!;
         public TokenValidationParameters ValidationParameters { get; set; } = null!;
+    }
+
+    internal static TokenValidationParameters GetTokenValidationParameters(string secret)
+    {
+        return new TokenValidationParameters()
+        {
+            IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.ASCII.GetBytes(secret)),
+            ValidateIssuerSigningKey = true,
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            RequireExpirationTime = true,
+            ValidateLifetime = true
+        };
     }
 }

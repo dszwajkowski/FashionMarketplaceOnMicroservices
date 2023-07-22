@@ -17,10 +17,11 @@ public static class CreateUser
     {
         public RequestValidator()
         {
+            RuleLevelCascadeMode = CascadeMode.Stop;
+
             RuleFor(x => x.Username)
                 .NotEmpty()
-                .MinimumLength(4)
-                .MaximumLength(15);
+                .Length(4, 15);
             RuleFor(x => x.Email)
                 .NotEmpty()
                 .EmailAddress();
@@ -29,15 +30,12 @@ public static class CreateUser
                 .MinimumLength(IdentityConfiguration.MinimumPasswordLength); // todo move other constants
             RuleFor(x => x.FirstName)
                 .NotEmpty()
-                .MinimumLength(2)
-                .MaximumLength(50);
+                .Length(2, 50);
             RuleFor(x => x.SecondName)
                 .NotEmpty()
-                .MinimumLength(2)
-                .MaximumLength(50);
+                .Length(2, 50);
             RuleFor(x => x.PhoneNumber)
-                .MinimumLength(5)
-                .MaximumLength(15);
+                .Length(5, 15);
         }
     }
 }

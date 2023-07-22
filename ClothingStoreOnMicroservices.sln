@@ -5,6 +5,10 @@ VisualStudioVersion = 17.4.33213.308
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IdentityService", "IdentityService\IdentityService.csproj", "{B1979306-08F2-48F3-BEA5-B107A1C27A41}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Identity", "Identity", "{9B0CDAC6-05E5-4174-8B37-7E8A3086C2C9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdentityService.UnitTests", "IdentityService.UnitTests\IdentityService.UnitTests.csproj", "{AE8AF464-4119-4710-A234-88614C87CC9D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,9 +19,17 @@ Global
 		{B1979306-08F2-48F3-BEA5-B107A1C27A41}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B1979306-08F2-48F3-BEA5-B107A1C27A41}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B1979306-08F2-48F3-BEA5-B107A1C27A41}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE8AF464-4119-4710-A234-88614C87CC9D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE8AF464-4119-4710-A234-88614C87CC9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE8AF464-4119-4710-A234-88614C87CC9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE8AF464-4119-4710-A234-88614C87CC9D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B1979306-08F2-48F3-BEA5-B107A1C27A41} = {9B0CDAC6-05E5-4174-8B37-7E8A3086C2C9}
+		{AE8AF464-4119-4710-A234-88614C87CC9D} = {9B0CDAC6-05E5-4174-8B37-7E8A3086C2C9}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2A314B68-73ED-4FD1-BEC9-25694E0BFE36}

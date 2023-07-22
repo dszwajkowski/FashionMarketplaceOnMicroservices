@@ -1,5 +1,8 @@
 using IdentityService.Configuration;
 using IdentityService.Grpc;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("IdentityService.UnitTests")]
 
 var builder = WebApplication.CreateBuilder(args);
 

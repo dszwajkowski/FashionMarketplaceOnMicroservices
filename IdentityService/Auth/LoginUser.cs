@@ -10,6 +10,8 @@ public static class LoginUser
     {
         public RequestValidator()
         {
+            RuleLevelCascadeMode = CascadeMode.Stop;
+
             RuleFor(x => x.Email)
                 .NotEmpty()
                 .EmailAddress();

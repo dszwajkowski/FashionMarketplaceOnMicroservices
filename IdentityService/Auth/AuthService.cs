@@ -19,8 +19,18 @@ internal class AuthService : IAuthService
         _jwtSettings = jwtSettings;
     }
 
-    public async Task<Result<LoginUser.Response>> LoginAsync(LoginUser.Request request)
+    public async Task<Result<LoginUser.Response>> LoginAsync(
+        LoginUser.Request request,
+        CancellationToken cancellationToken)
     {
+        var validator = new LoginUser.RequestValidator();
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return new Result<LoginUser.Response>(ErrorType.Validation,
+                validationResult.Errors.Select(x => x.ErrorMessage));
+        }
+
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user is null)
         {
@@ -36,8 +46,21 @@ internal class AuthService : IAuthService
 
         return GenerateLoginResponse(user);
     }
-    public async Task<Result<bool?>> RegisterAsync(CreateUser.Request request)
+
+    public async Task<Result<bool?>> RegisterAsync(
+        CreateUser.Request request,
+        CancellationToken cancellationToken)
     {
+        var validator = new CreateUser.RequestValidator();
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            var errorResponse = new Result<bool?>(
+                ErrorType.Validation,
+                validationResult.Errors.Select(x => x.ErrorMessage));
+            return errorResponse;
+        }
+
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user is not null)
         {
@@ -68,6 +91,7 @@ internal class AuthService : IAuthService
 
         return new Result<bool?>(true);
     }
+
     public async Task<bool> ValidateTokenAsync(string token)
     {
         if (string.IsNullOrEmpty(token))
