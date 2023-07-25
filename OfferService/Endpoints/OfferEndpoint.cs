@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using OfferService.Data;
+﻿using Mapster;
+using Microsoft.AspNetCore.Mvc;
 using OfferService.Endpoints.Filters;
-using OfferService.Endpoints.Helpers;
 using OfferService.Models;
 using OfferService.Offers;
+using static OfferService.Endpoints.Helpers.EndpointHelpers;
 
 namespace OfferService.Endpoints;
 
@@ -13,94 +13,98 @@ public class OfferEndpoint : IEndpoint
     {
         var group = app.MapGroup("offer");
         group.MapGet("/{id}", GetById);
-        group.MapGet("/getfiltered", GetWithFilters)
-            .Produces<GetFilteredOffers.Request>();
-        //.Accepts<GetFilteredOffers.Request>("");
+        group.MapGet("", GetWithFilters);
         group.MapPost("", Create)
             .AddEndpointFilter<TokenValidationFilter>();
         group.MapPut("", Update)
             .AddEndpointFilter<TokenValidationFilter>();
-        group.MapPut("/archive", Archive)
-            .AddEndpointFilter<TokenValidationFilter>();
     }
 
-    internal IResult GetById(ApplicationDbContext dbContext, [FromRoute] string id)
+    internal async Task<IResult> GetById(IOfferRepository offerRepository, [FromRoute] string id, CancellationToken cancellationToken)
     {
-        var offer = dbContext
-            .Offers
-            .Where(x => x.Id == Ulid.Parse(id))
-            .SingleOrDefault(); // todo fix
-
-        if (offer is null)
+        var validator = new GetOffer.RequestValidator();
+        var validationResult = await validator.ValidateAsync(new GetOffer.Request(id), cancellationToken);
+        if (!validationResult.IsValid)
         {
-            return EndpointHelpers.MapToHttpResponse(
-                new Result<GetOffer.Response>(ErrorType.NotFound, $"Offer with id {id} doesn't exists."));
+            return MapToHttpResponse(
+                new Result<GetOffer.Response>(ErrorType.Validation, validationResult.Errors.Select(x => x.ErrorMessage)));
         }
 
-        return EndpointHelpers.MapToHttpResponse(new Result<GetOffer.Response>(new GetOffer.Response()));
+        var result = await offerRepository.GetOfferByIdAsync(Ulid.Parse(id), cancellationToken);
+
+        return MapToHttpResponse(result);
     }
 
-    internal IResult GetWithFilters(ApplicationDbContext dbContext, GetFilteredOffers.Request request)
+    internal async Task<IResult> GetWithFilters(
+        IOfferRepository offerRepository,
+        GetFilteredOffers.Request request,
+        CancellationToken cancellationToken)
     {
-        var filteredQuery = BuildFilters(dbContext, request);
-
-        // todo map
-
-        return EndpointHelpers.MapToHttpResponse(new Result<List<Offer>>(filteredQuery.ToList())); 
-    }
-
-    internal IResult Create(ApplicationDbContext dbContext, [FromBody] CreateOffer.Request request)
-    {
-        // todo map, extract creater from request
-        var offer = new Offer
+        var validator = new GetFilteredOffers.RequestValidator();
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
         {
-            Title = request.Title,
-            Category = request.Category,
-            Description = request.Description,
-            Price = request.Price
-        };
-
-        dbContext.Add(offer);
-        dbContext.SaveChanges();
-
-        return Results.Ok(new CreateOffer.Response(offer.Id));
-    }
-
-    internal IResult Update(ApplicationDbContext dbContext, [FromBody] UpdateOffer.Request request)
-    {
-        var offer = dbContext.Offers
-            .Where(x => x.Id == Ulid.Parse(request.Id))
-            .SingleOrDefault();
-
-        if (offer is null)
-        {
-            return EndpointHelpers.MapToHttpResponse(
-                new Result<bool>(ErrorType.NotFound, $"Offer with id {request.Id} doesn't exists."));
+            return MapToHttpResponse(
+                new Result<GetFilteredOffers.Response>(ErrorType.Validation,
+                    validationResult.Errors.Select(x => x.ErrorMessage)));
         }
 
-        // todo map and save
-
-        return Results.Ok();
+        var filters = request.Adapt<OfferFilters>();
+        var offers = offerRepository.GetFilteredOffers(filters);
+        var offersDto = offers.Adapt<List<GetFilteredOffers.OfferDto>>();
+        return MapToHttpResponse(new Result<GetFilteredOffers.Response>(new GetFilteredOffers.Response(offersDto)));
     }
 
-    internal IResult Archive(ApplicationDbContext dbContext)
+    internal async Task<IResult> Create(
+        IOfferRepository offerRepository, 
+        HttpContext context,
+        [FromBody] CreateOffer.Request request, 
+        CancellationToken cancellationToken)
     {
-        // todo implementation
-        return Results.Ok();
+        var validator = new CreateOffer.RequestValidator();
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return MapToHttpResponse(
+                new Result<CreateOffer.Response>(ErrorType.Validation, validationResult.Errors.Select(x => x.ErrorMessage)));
+        }
+
+        var offer = request.Adapt<Offer>();
+        var result = await offerRepository.CreateOfferAsync(offer, cancellationToken);
+        if (!await offerRepository.SaveChangesAsync())
+        {
+            return Results.Problem();
+        }
+
+        return MapToHttpResponse(new Result<CreateOffer.Response>(new CreateOffer.Response(result)));
     }
 
-    private IQueryable<Offer> BuildFilters(ApplicationDbContext dbContext, GetFilteredOffers.Request request)
+    internal async Task<IResult> Update(
+        IOfferRepository offerRepository, 
+        [FromBody] UpdateOffer.Request request,
+        CancellationToken cancellationToken)
     {
-        var query = dbContext.Offers.AsQueryable();
+        var validator = new UpdateOffer.RequestValidator();
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return MapToHttpResponse(
+                new Result<bool>(ErrorType.Validation, validationResult.Errors.Select(x => x.ErrorMessage)));
+        }
 
-        if (request.Category is not null) query = query.Where(x => x.Category == request.Category);
-        if (request.Title is not null) query = query.Where(x => x.Title.Contains(request.Title));
-        if (request.Description is not null) query = query.Where(x => x.Description.Contains(request.Description));
-        if (request.PriceMin is not null) query = query.Where(x => x.Price >= request.PriceMin);
-        if (request.PriceMax is not null) query = query.Where(x => x.Price <= request.PriceMax);
-        if (request.DateAfter is not null) query = query.Where(x => x.DateAdded >= request.DateAfter);
-        if (request.DateBefore is not null) query = query.Where(x => x.DateAdded <= request.DateBefore);
+        var offer = request.Adapt<Offer>();
+        var result = await offerRepository.UpdateOfferAsync(offer, cancellationToken);
+        
+        if (!result.IsSuccess)
+        {
+            return MapToHttpResponse(result);
+        }
 
-        return query;
+        if (!await offerRepository.SaveChangesAsync())
+        {
+            return Results.Problem();
+        }
+
+        return Results.Ok();
     }
 }

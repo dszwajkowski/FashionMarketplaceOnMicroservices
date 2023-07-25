@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using OfferService.Configuration;
 using OfferService.ConfigureServices;
 using OfferService.Grpc;
+using OfferService.Offers;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("OfferService.UnitTests")]
@@ -17,6 +18,7 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwagger();
 builder.Services.AddScoped<IGrpcIdentityService, GrpcIdentityService>();
+builder.Services.AddTransient<IOfferRepository, OfferRepository>();
 
 ValidatorOptions.Global.DefaultRuleLevelCascadeMode = CascadeMode.Stop;
 

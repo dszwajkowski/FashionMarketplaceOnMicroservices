@@ -12,7 +12,7 @@ public static class GetOffer
         {
             RuleFor(x => x.Id)
                 .Must(x => Ulid.TryParse(x, out _))
-                .WithMessage("");
+                .WithMessage("{PropertyValue} is not a valid id.");
         }
     }
 

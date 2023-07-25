@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace OfferService.Models;
 
@@ -8,6 +9,7 @@ public class Offer
     [MaxLength(128)]
     public Ulid Id { get; set; }
     [Required]
+    //[ForeignKey(nameof(User))]
     public Guid CreatorId { get; set; }
     [Required]
     public string Category { get; set; } = null!;
@@ -25,7 +27,8 @@ public class Offer
     [Required]
     public bool Active { get; set; } = true;
     [Required]
-    public bool Visible { get; set; }
+    public bool Visible { get; set; } = true;
 
+    //public virtual User User { get; set; } = null!;
     public virtual ICollection<OfferModel> Photos { get; set; } = null!;
 }

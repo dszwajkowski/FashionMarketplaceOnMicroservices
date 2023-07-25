@@ -6,9 +6,11 @@ public static class UpdateOffer
 {
     public record Request(
         string Id,
+        string Category,
         string Title,
         string Description,
-        decimal Price);
+        decimal Price,
+        bool Active);
 
     internal class RequestValidator : AbstractValidator<Request>
     {
