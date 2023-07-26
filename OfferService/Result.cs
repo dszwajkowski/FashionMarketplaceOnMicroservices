@@ -7,6 +7,8 @@ public class Result<T>
     public IEnumerable<string>? ErrorMessages { get; private set; }
     public bool IsSuccess => ErrorType is null;
 
+    public Result() { }
+
     public Result(T? data)
     {
         Data = data;

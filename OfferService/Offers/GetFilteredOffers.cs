@@ -102,5 +102,5 @@ public static class GetFilteredOffers
         DateTime DateAdded,
         DateTime? DateModified);
 
-    public record Response(IEnumerable<OfferDto> offers);
+    public record Response(IEnumerable<OfferDto> Offers);
 }

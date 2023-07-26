@@ -31,8 +31,10 @@ public class OfferEndpoint : IEndpoint
         }
 
         var result = await offerRepository.GetOfferByIdAsync(Ulid.Parse(id), cancellationToken);
+        
+        var offerDto = result.Adapt<Result<GetOffer.Response>>();
 
-        return MapToHttpResponse(result);
+        return MapToHttpResponse(offerDto);
     }
 
     internal async Task<IResult> GetWithFilters(
@@ -56,8 +58,7 @@ public class OfferEndpoint : IEndpoint
     }
 
     internal async Task<IResult> Create(
-        IOfferRepository offerRepository, 
-        HttpContext context,
+        IOfferRepository offerRepository,
         [FromBody] CreateOffer.Request request, 
         CancellationToken cancellationToken)
     {
