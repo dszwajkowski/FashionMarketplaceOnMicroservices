@@ -1,4 +1,7 @@
-﻿using Grpc.Net.Client;
+﻿using Grpc.Core;
+using Grpc.Net.Client;
+using Polly;
+using Polly.Contrib.WaitAndRetry;
 
 namespace OfferService.Grpc;
 
@@ -6,6 +9,10 @@ public class GrpcIdentityService : IGrpcIdentityService
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<GrpcIdentityService> _logger;
+    private readonly IAsyncPolicy<TokenValidationResponse> _retryPolicy =
+        Policy<TokenValidationResponse>
+            .Handle<RpcException>()
+            .WaitAndRetryAsync(Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(1), 5));
 
     public GrpcIdentityService(IConfiguration configuration, ILogger<GrpcIdentityService> logger)
     {
@@ -18,7 +25,7 @@ public class GrpcIdentityService : IGrpcIdentityService
     /// </summary>
     /// <param name="token">JWT token</param>
     /// <returns></returns>
-    public Task<bool> ValidateToken(string token)
+    public async Task<bool> ValidateToken(string token)
     {
         var channel = GrpcChannel.ForAddress(_configuration["GrpcIdentityService"]!);
         var client = new GrpcAuth.GrpcAuthClient(channel);
@@ -31,13 +38,13 @@ public class GrpcIdentityService : IGrpcIdentityService
         TokenValidationResponse? response = null;
         try
         {
-            response = client.ValidateToken(request);
+            response = await _retryPolicy.ExecuteAsync(async () => await client.ValidateTokenAsync(request));
         }
         catch (Exception e)
         {
             _logger.LogCritical(e, "Couldn't validate token, gRPC connection to IdentityService failed.");
             throw;
         }
-        return Task.FromResult(response!.IsValid);
+        return response!.IsValid;
     }
 }
