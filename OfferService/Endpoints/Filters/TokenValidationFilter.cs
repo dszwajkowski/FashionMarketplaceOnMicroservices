@@ -27,18 +27,10 @@ public class TokenValidationFilter : IEndpointFilter
             return Results.Unauthorized();
         }
 
-        try
+        var validationResult = await _identityService.ValidateToken(token);
+        if (!validationResult)
         {
-            var validationResult = await _identityService.ValidateToken(token);
-            if (!validationResult)
-            {
-                return Results.Unauthorized();
-            }
-        }
-        catch (Exception)
-        {
-            // todo log
-            throw;
+            return Results.Unauthorized();
         }
 
         return await next(context);

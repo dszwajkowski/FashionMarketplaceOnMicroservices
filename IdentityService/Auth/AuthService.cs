@@ -12,11 +12,16 @@ internal class AuthService : IAuthService
 {
     private readonly UserManager<User> _userManager;
     private readonly JwtSettings _jwtSettings;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(UserManager<User> userManager, JwtSettings jwtSettings)
+    public AuthService(
+        UserManager<User> userManager,
+        JwtSettings jwtSettings,
+        ILogger<AuthService> logger)
     {
         _userManager = userManager;
         _jwtSettings = jwtSettings;
+        _logger = logger;
     }
 
     public async Task<Result<LoginUser.Response>> LoginAsync(
@@ -41,6 +46,7 @@ internal class AuthService : IAuthService
         bool hasValidPassword = await _userManager.CheckPasswordAsync(user, request.Password);
         if (!hasValidPassword)
         {
+            _logger.LogWarning("Not valid password provided while trying to log to account {User}", request.Email);
             return new Result<LoginUser.Response>(ErrorType.Validation, "Wrong e-mail or password.");
         }
 

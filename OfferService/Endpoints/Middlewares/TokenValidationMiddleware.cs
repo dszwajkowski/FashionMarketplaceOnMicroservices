@@ -39,7 +39,6 @@ public class TokenValidationMiddleware
         catch (Exception) 
         {
             context.Response.StatusCode = 500;
-            // todo log
         }
 
         await _next(context);

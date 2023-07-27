@@ -8,6 +8,7 @@ service GrpcAuth {
 
 message ValidateTokenRequest {
     string token = 1;
+    string serviceName = 2;
 }
 
 message TokenValidationResponse {

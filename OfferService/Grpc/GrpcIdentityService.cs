@@ -5,10 +5,12 @@ namespace OfferService.Grpc;
 public class GrpcIdentityService : IGrpcIdentityService
 {
     private readonly IConfiguration _configuration;
+    private readonly ILogger<GrpcIdentityService> _logger;
 
-    public GrpcIdentityService(IConfiguration configuration)
+    public GrpcIdentityService(IConfiguration configuration, ILogger<GrpcIdentityService> logger)
     {
         _configuration = configuration;
+        _logger = logger;
     }
 
     /// <summary>
@@ -22,7 +24,8 @@ public class GrpcIdentityService : IGrpcIdentityService
         var client = new GrpcAuth.GrpcAuthClient(channel);
         var request = new ValidateTokenRequest()
         {
-            Token = token
+            Token = token,
+            ServiceName = "OfferService"
         };
 
         TokenValidationResponse? response = null;
@@ -30,9 +33,9 @@ public class GrpcIdentityService : IGrpcIdentityService
         {
             response = client.ValidateToken(request);
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            Console.WriteLine($"Could not call Grpc Server: {ex.Message}"); //todo log
+            _logger.LogCritical(e, "Couldn't validate token, gRPC connection to IdentityService failed.");
             throw;
         }
         return Task.FromResult(response!.IsValid);
