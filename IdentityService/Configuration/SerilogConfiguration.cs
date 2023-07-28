@@ -4,7 +4,7 @@ namespace IdentityService.Configuration;
 
 internal static class SerilogConfiguration
 {
-    internal static void AddSerilog(IConfiguration configuration)
+    internal static void ConfigureSerilog(IConfiguration configuration)
     {
         var seqUrl = configuration["Serilog:SeqUrl"];
 

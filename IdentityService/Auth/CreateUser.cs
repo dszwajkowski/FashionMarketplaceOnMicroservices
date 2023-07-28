@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using EventBus;
+using FluentValidation;
 using IdentityService.Configuration;
 
 namespace IdentityService.Auth;
@@ -6,8 +7,8 @@ namespace IdentityService.Auth;
 public static class CreateUser
 {
     public record Request(
-        string Username, 
-        string Email, 
+        string Username,
+        string Email,
         string Password,
         string FirstName,
         string SecondName,
@@ -37,5 +38,14 @@ public static class CreateUser
             RuleFor(x => x.PhoneNumber)
                 .Length(5, 15);
         }
+    }
+
+    public record CreatedUserEvent : IntegrationEvent
+    {
+        public string Email { get; init; } = null!;
+        public string Username { get; init; } = null!;
+        public string FirstName { get; init; } = null!;
+        public string SecondName { get; init; } = null!;
+        public string? PhoneNumber { get; init; }
     }
 }

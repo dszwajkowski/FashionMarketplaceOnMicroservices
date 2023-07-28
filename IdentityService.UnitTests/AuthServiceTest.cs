@@ -1,3 +1,4 @@
+using EventBus;
 using FluentAssertions;
 using IdentityService.Auth;
 using IdentityService.Models;
@@ -14,6 +15,7 @@ public class AuthServiceTest
     private readonly Mock<UserManager<User>> _userManagerMock;
     private readonly JwtSettings _jwtSettings;
     private readonly Mock<ILogger<AuthService>> _logger;
+    private readonly Mock<IEventBus> _eventBus;
     private List<User> _users;
 
     public AuthServiceTest()
@@ -27,13 +29,17 @@ public class AuthServiceTest
         _jwtSettings = jwtSettings;
 
         _logger = new Mock<ILogger<AuthService>>();
+
+        _eventBus = new Mock<IEventBus>();
+        _eventBus.Setup(x => x.Publish(It.IsAny<IntegrationEvent>()))
+            .Verifiable();
     }
 
     [Fact]
     public async Task RegisterUser_ReturnTrue_WhenUserCreated()
     {
         // Arrange
-        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object);
+        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object, _eventBus.Object);
         var createUserRequest = new CreateUser.Request("TestUser3", "testuser3@example.com",
             "Qwerty123", "John", "Smith", "123456789");
 
@@ -50,7 +56,7 @@ public class AuthServiceTest
     public async Task RegisterUser_ReturnValidationError_WhenRequestNotValid()
     {
         // Arrange
-        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object);
+        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object, _eventBus.Object);
         var createUserRequest = new CreateUser.Request("", "natvalidemail",
             "", "", "", "");
 
@@ -72,7 +78,7 @@ public class AuthServiceTest
     public async Task RegisterUser_ReturnValidationError_WhenEmailTaken()
     {
         // Arrange
-        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object);
+        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object, _eventBus.Object);
         var createUserRequest = new CreateUser.Request("TestUser3", "testuser1@example.com",
             "Qwerty123", "John", "Smith", "123456789");
 
@@ -91,7 +97,7 @@ public class AuthServiceTest
     public async Task RegisterUser_ReturnValidationError_WhenUserNameTaken()
     {
         // Arrange
-        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object);
+        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object, _eventBus.Object);
         var createUserRequest = new CreateUser.Request("TestUser3", "testuser1@example.com",
             "Qwerty123", "John", "Smith", "123456789");
 
@@ -110,7 +116,7 @@ public class AuthServiceTest
     public async Task LoginUser_ReturnToken_WhenLoginSuccessfully()
     {
         // Arrange
-        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object);
+        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object, _eventBus.Object);
         var loginRequest = new LoginUser.Request("testuser1@example.com", "Qwerty123");
 
         // Act
@@ -126,7 +132,7 @@ public class AuthServiceTest
     public async Task LoginUser_ReturnValidationError_WhenRequestNotValid()
     {
         // Arrange
-        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object);
+        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object, _eventBus.Object);
         var loginRequest = new LoginUser.Request("notvalidemail", "");
 
         // Act
@@ -145,7 +151,7 @@ public class AuthServiceTest
     public async Task LoginUser_ReturnValidationError_WhenWrongEmail()
     {
         // Arrange
-        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object);
+        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object, _eventBus.Object);
         var loginRequest = new LoginUser.Request("thisemaildoesntexists@example.com", "Qwerty123");
 
         // Act
@@ -163,7 +169,7 @@ public class AuthServiceTest
     public async Task LoginUser_ReturnValidationError_WhenWrongPassword()
     {
         // Arrange
-        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object);
+        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object, _eventBus.Object);
         var loginRequest = new LoginUser.Request("testuser1@example.com", "notvalidpassword");
 
         // Act
@@ -181,7 +187,7 @@ public class AuthServiceTest
     public async Task ValidateToken_ReturnTrue_WhenTokenValid()
     {
         // Arrange
-        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object);
+        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object, _eventBus.Object);
         // get valid token
         var loginRequest = new LoginUser.Request("testuser1@example.com", "Qwerty123");
         var loginResult = await authService.LoginAsync(loginRequest, CancellationToken.None);
@@ -198,7 +204,7 @@ public class AuthServiceTest
     public async Task ValidateToken_ReturnFalse_WhenTokenInvalid()
     {
         // Arrange
-        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object);
+        var authService = new AuthService(_userManagerMock.Object, _jwtSettings, _logger.Object, _eventBus.Object);
         const string invalidToken = "somenotvalidtoken";
 
         // Act

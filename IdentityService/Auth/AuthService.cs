@@ -1,4 +1,5 @@
-﻿using IdentityService.Models;
+﻿using EventBus;
+using IdentityService.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -13,15 +14,18 @@ internal class AuthService : IAuthService
     private readonly UserManager<User> _userManager;
     private readonly JwtSettings _jwtSettings;
     private readonly ILogger<AuthService> _logger;
+    private readonly IEventBus _eventBus;
 
     public AuthService(
         UserManager<User> userManager,
         JwtSettings jwtSettings,
-        ILogger<AuthService> logger)
+        ILogger<AuthService> logger,
+        IEventBus eventBus)
     {
         _userManager = userManager;
         _jwtSettings = jwtSettings;
         _logger = logger;
+        _eventBus = eventBus;
     }
 
     public async Task<Result<LoginUser.Response>> LoginAsync(
@@ -94,6 +98,17 @@ internal class AuthService : IAuthService
             var errors = result.Errors.Select(x => x.Description);
             return new Result<bool?>(ErrorType.Validation, errors);
         }
+
+        var userCreatedEvent = new CreateUser.CreatedUserEvent
+        {
+            Email = request.Email,
+            Username = request.Username,
+            FirstName = request.FirstName,
+            SecondName = request.SecondName,
+            PhoneNumber = request.PhoneNumber
+        };
+        // todo implement outbox pattern so we don't fail whole process when connection with event bus fails
+        _eventBus.Publish(userCreatedEvent);
 
         return new Result<bool?>(true);
     }
