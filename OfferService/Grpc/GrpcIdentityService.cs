@@ -12,7 +12,7 @@ public class GrpcIdentityService : IGrpcIdentityService
     private readonly IAsyncPolicy<TokenValidationResponse> _retryPolicy =
         Policy<TokenValidationResponse>
             .Handle<RpcException>()
-            .WaitAndRetryAsync(Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(1), 5));
+            .WaitAndRetryAsync(Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(1), 2));
 
     public GrpcIdentityService(IConfiguration configuration, ILogger<GrpcIdentityService> logger)
     {
