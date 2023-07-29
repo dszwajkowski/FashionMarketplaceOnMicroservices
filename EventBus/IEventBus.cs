@@ -3,8 +3,10 @@
 public interface IEventBus
 {
     bool Publish(IntegrationEvent integrationEvent);
-    bool Subscribe<T>()
-        where T : IntegrationEvent;
-    bool Unsubscribe<T>()
-        where T : IntegrationEvent;
+    bool Subscribe<T, TH>()
+        where T : IntegrationEvent 
+        where TH : IIntegrationEventHandler;
+    bool Unsubscribe<T, TH>()
+        where T : IntegrationEvent
+        where TH : IIntegrationEventHandler;
 }

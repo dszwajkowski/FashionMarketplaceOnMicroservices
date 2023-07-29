@@ -10,6 +10,8 @@ namespace EventBus.RabbitMQ;
 
 public class RabbitMQConnectionManager : IRabbitMQConnectionManager
 {
+    public string BrokerName { get; set; }
+
     private readonly ILogger<RabbitMQConnectionManager> _logger;
     private readonly IConnectionFactory _connectionFactory;
     private readonly RetryPolicy<IConnection> _retryPolicy;
@@ -27,8 +29,11 @@ public class RabbitMQConnectionManager : IRabbitMQConnectionManager
         {
             HostName = host,
             Port = port,
-            ClientProvidedName = clientName
+            ClientProvidedName = clientName,
+            DispatchConsumersAsync = true
         };
+
+        BrokerName = "EventBus";
 
         _logger = logger;
 
@@ -83,6 +88,9 @@ public class RabbitMQConnectionManager : IRabbitMQConnectionManager
         }
 
         _channel = _connection!.CreateModel();
+        
+        _logger.LogTrace("Declaring RabbitMQ exchange.");
+        _channel.ExchangeDeclare(BrokerName, ExchangeType.Direct, true);
 
         return _channel;
     }

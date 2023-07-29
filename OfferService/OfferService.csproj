@@ -37,6 +37,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\EventBus\EventBus.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Protobuf Include="Grpc/auth.proto" GrpcServices="Client" />
   </ItemGroup>
 

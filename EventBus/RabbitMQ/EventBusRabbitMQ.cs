@@ -6,6 +6,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
 using System.Text.Json;
+using System.Text;
 
 namespace EventBus.RabbitMQ;
 
@@ -15,6 +16,8 @@ public class EventBusRabbitMQ : IEventBus, IDisposable
 
     private readonly IRabbitMQConnectionManager _connectionManager;
     private readonly ILogger<EventBusRabbitMQ> _logger;
+    private readonly IDictionary<string, IList<Type>> _eventHandlers;
+    private readonly IList<Type> _eventTypes;
     private readonly string? _queueName;
 
     private RetryPolicy _publishRetryPolicy;
@@ -25,8 +28,12 @@ public class EventBusRabbitMQ : IEventBus, IDisposable
         string? queueName = null)
     {
         _connectionManager = connectionManager;
-        _queueName = queueName;
+        _connectionManager.BrokerName = BrokerName;
+        _queueName = queueName ?? "";
         _logger = logger;
+
+        _eventHandlers = new Dictionary<string, IList<Type>>();
+        _eventTypes = new List<Type>();
 
         _publishRetryPolicy = Policy
             .Handle<BrokerUnreachableException>()
@@ -45,13 +52,14 @@ public class EventBusRabbitMQ : IEventBus, IDisposable
         var channel = _connectionManager.GetChannel();
         if (channel is not null)
         {
-            DeclareExchange(channel);
+            // uncomment if you want to publish events to publisher's queue as well
+            //DeclareAndBindQueue(channel, eventName);
 
             var body = JsonSerializer.SerializeToUtf8Bytes(integrationEvent, integrationEvent.GetType());
 
             _logger.LogInformation("Publishing {EventType}:{EvenId} to RabbitMQ.", eventName, integrationEvent.Id);
 
-            _publishRetryPolicy.Execute(() => channel.BasicPublish(BrokerName, eventName, body: body));
+            _publishRetryPolicy.Execute(() => channel.BasicPublish(BrokerName, eventName, null, body));
 
             return true;
         }
@@ -62,15 +70,53 @@ public class EventBusRabbitMQ : IEventBus, IDisposable
         };
     }
 
-    public bool Subscribe<T>()
+    public bool Subscribe<T, TH>()
         where T : IntegrationEvent
+        where TH : IIntegrationEventHandler
     {
+        var eventType = typeof(T);
+        var handlerType = typeof(TH);
 
-        throw new NotImplementedException();
+        _logger.LogInformation("Subcribing to event {EventType} with {Handler}", eventType.Name, handlerType.Name);
+
+        var channel = _connectionManager.GetChannel();
+
+        if (channel is null) 
+        {
+            _logger.LogError("Can't subscribe to event {EventType} with {Handler}. Couldn't get channel.", 
+                eventType.Name, handlerType.Name);
+            return false;
+        }
+
+        DeclareAndBindQueue(channel, eventType.Name);
+
+        if (!_eventHandlers.ContainsKey(eventType!.Name))
+        {
+            _eventHandlers.Add(eventType.Name, new List<Type>());
+        }
+
+        if (_eventHandlers[eventType.Name].Contains(eventType))
+        {
+            _logger.LogTrace("{Handler} already registered for {EventType}. Exiting with success.", handlerType.Name, eventType.Name);
+            return true;
+        }
+
+        _eventHandlers[eventType.Name].Add(handlerType);
+        if (!_eventTypes.Contains(eventType))
+        {
+            _eventTypes.Add(eventType);
+        }
+
+        _logger.LogTrace("Added {Handler} for {EventType}.", handlerType.Name, eventType.Name);
+
+        StartEventConsume(channel);
+
+        return true;
     }
 
-    public bool Unsubscribe<T>()
+    public bool Unsubscribe<T, TH>()
         where T : IntegrationEvent
+        where TH : IIntegrationEventHandler
     {
         throw new NotImplementedException();
     }
@@ -80,36 +126,50 @@ public class EventBusRabbitMQ : IEventBus, IDisposable
         _connectionManager.Dispose();
     }
 
-    private void DeclareExchange(IModel channel)
+    private void DeclareAndBindQueue(IModel channel, string eventName)
     {
-        _logger.LogTrace("Declaring RabbitMQ exchange.");
-        channel.ExchangeDeclare(BrokerName, ExchangeType.Direct);
+        channel.QueueDeclare(_queueName, true, false, false, null);
+        channel.QueueBind(_queueName, BrokerName, eventName);
     }
 
-    private void DeclareAndBindQueue(IModel channel, string routingKey)
+    private void StartEventConsume(IModel channel)
     {
-        channel.QueueDeclare(_queueName);
-        channel.QueueBind(_queueName, BrokerName, "");
+        var consumer = new AsyncEventingBasicConsumer(channel);
+
+        consumer.Received += ProcessEvent;
+
+        channel.BasicConsume(_queueName, false, consumer);
     }
 
-    private void StartEventConsume()
+    private async Task ProcessEvent(object sender, BasicDeliverEventArgs @event)
     {
+        if (!_eventHandlers.ContainsKey(@event.RoutingKey))
+        {
+            _logger.LogWarning("Not subscibed to {EventType}.", @event.RoutingKey);
+            return;
+        }
+
+        var handlers = _eventHandlers[@event.RoutingKey];
+        if (handlers.Count == 0)
+        {
+            _logger.LogWarning("No handlers registered for {EventType}.", @event.RoutingKey);
+            return;
+        }
+
+        var message = Encoding.UTF8.GetString(@event.Body.Span);
+        var eventType = _eventTypes
+            .Where(x => x.Name.Equals(@event.RoutingKey, StringComparison.InvariantCultureIgnoreCase))
+            .First();
+
+        var integrationEvent = JsonSerializer.Deserialize(message, eventType);
+
+        foreach (var handler in handlers)
+        {
+            await (Task)handler.GetMethod("Handle")!.Invoke(handler, new object[] { integrationEvent! })!;
+        }
+
         var channel = _connectionManager.GetChannel();
 
-        if (channel is not null)
-        {
-            var consumer = new AsyncEventingBasicConsumer(channel);
-
-            consumer.Received += async (sender, e) =>
-            {
-                // todo implementation
-                await Task.FromResult(1);
-                channel.BasicAck(e.DeliveryTag, false);
-            };
-        }
-        else
-        {
-            _logger.LogError("Can't start consuming events, could not get channel.");
-        }
+        channel!.BasicAck(@event.DeliveryTag, false);
     }
 }

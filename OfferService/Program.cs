@@ -26,6 +26,7 @@ try
     builder.Services.AddSwagger();
     builder.Services.AddScoped<IGrpcIdentityService, GrpcIdentityService>();
     builder.Services.AddTransient<IOfferRepository, OfferRepository>();
+    builder.Services.ConfigureRabbitMQ(builder.Configuration);
 
     ValidatorOptions.Global.DefaultRuleLevelCascadeMode = CascadeMode.Stop;
 
@@ -54,6 +55,8 @@ try
     app.UseRouting();
 
     app.AddEndpoints();
+
+    app.RegisterEventHandlers();
 
     app.Run();
 } 
