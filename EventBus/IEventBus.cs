@@ -2,9 +2,9 @@
 
 public interface IEventBus
 {
-    void Publish(IntegrationEvent integrationEvent);
-    void Subscribe<T>()
+    bool Publish(IntegrationEvent integrationEvent);
+    bool Subscribe<T>()
         where T : IntegrationEvent;
-    void Unsubscribe<T>()
+    bool Unsubscribe<T>()
         where T : IntegrationEvent;
 }

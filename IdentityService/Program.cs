@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
-SerilogConfiguration.AddSerilog(builder.Configuration);
+SerilogConfiguration.ConfigureSerilog(builder.Configuration);
 
 try
 {
@@ -18,8 +18,10 @@ try
     // Add services to the container.
     builder.Services.ConfigureDatabase(builder.Configuration);
     builder.Services.ConfigureIdentity(builder.Configuration);
-    builder.Services.AddEndpointsApiExplorer();
     builder.Services.ConfigureSwagger();
+    builder.Services.ConfigureRabbitMQ(builder.Configuration);
+
+    builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddGrpc();
 
     builder.Host.UseSerilog();
