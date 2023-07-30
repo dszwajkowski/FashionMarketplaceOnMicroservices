@@ -74,7 +74,11 @@ public class RabbitMQConnectionManager : IRabbitMQConnectionManager
         }
     }
 
-    public IModel? GetChannel()
+    /// <summary>
+    /// Gets channel if it's already open or opens new channel. If connection is closed it will create new connection.
+    /// </summary>
+    /// <returns></returns>
+    public IModel? GetOrCreateChannel()
     {
         if (IsChannelOpen)
         {

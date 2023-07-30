@@ -8,5 +8,5 @@ public interface IRabbitMQConnectionManager : IDisposable
     string Client { get; }
     string BrokerName { get; set; }
     bool CreateConnection();
-    IModel? GetChannel();
+    IModel? GetOrCreateChannel();
 }

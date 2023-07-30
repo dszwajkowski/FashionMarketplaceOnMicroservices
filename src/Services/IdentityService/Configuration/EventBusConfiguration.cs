@@ -30,7 +30,7 @@ internal static class EventBusConfiguration
             var connectionManagerLogger = sp.GetRequiredService<ILogger<RabbitMQConnectionManager>>();
             var connectionManager = new RabbitMQConnectionManager(host, portAsInt, client, connectionManagerLogger);
 
-            return new EventBusRabbitMQ(connectionManager, eventBusLogger, client);
+            return new EventBusRabbitMQ(connectionManager, sp, eventBusLogger, client);
         });
     }
 }

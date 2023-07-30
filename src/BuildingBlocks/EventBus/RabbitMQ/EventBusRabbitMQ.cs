@@ -7,6 +7,7 @@ using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
 using System.Text.Json;
 using System.Text;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EventBus.RabbitMQ;
 
@@ -15,6 +16,7 @@ public class EventBusRabbitMQ : IEventBus, IDisposable
     private const string BrokerName = "fashionmarketplace_eventbus";
 
     private readonly IRabbitMQConnectionManager _connectionManager;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<EventBusRabbitMQ> _logger;
     private readonly IDictionary<string, IList<Type>> _eventHandlers;
     private readonly IList<Type> _eventTypes;
@@ -24,12 +26,14 @@ public class EventBusRabbitMQ : IEventBus, IDisposable
 
     public EventBusRabbitMQ(
         IRabbitMQConnectionManager connectionManager,
+        IServiceProvider serviceProvider,
         ILogger<EventBusRabbitMQ> logger,
         string? queueName = null)
     {
         _connectionManager = connectionManager;
         _connectionManager.BrokerName = BrokerName;
         _queueName = queueName ?? "";
+        _serviceProvider = serviceProvider;
         _logger = logger;
 
         _eventHandlers = new Dictionary<string, IList<Type>>();
@@ -49,7 +53,7 @@ public class EventBusRabbitMQ : IEventBus, IDisposable
 
         _logger.LogTrace("Received {EventType}:{EvenId}, trying to publish to RabbitMQ.", eventName, integrationEvent.Id);
 
-        var channel = _connectionManager.GetChannel();
+        var channel = _connectionManager.GetOrCreateChannel();
         if (channel is not null)
         {
             // uncomment if you want to publish events to publisher's queue as well
@@ -79,7 +83,7 @@ public class EventBusRabbitMQ : IEventBus, IDisposable
 
         _logger.LogInformation("Subcribing to event {EventType} with {Handler}", eventType.Name, handlerType.Name);
 
-        var channel = _connectionManager.GetChannel();
+        var channel = _connectionManager.GetOrCreateChannel();
 
         if (channel is null) 
         {
@@ -118,7 +122,39 @@ public class EventBusRabbitMQ : IEventBus, IDisposable
         where T : IntegrationEvent
         where TH : IIntegrationEventHandler
     {
-        throw new NotImplementedException();
+        var eventType = typeof(T);
+        var handlerType = typeof(TH);
+
+        _logger.LogInformation("Unsubcribing to event {EventType} with {Handler}", eventType.Name, handlerType.Name);
+        
+        if (!_eventHandlers.ContainsKey(eventType.Name))
+        {
+            _logger.LogTrace("No handlers registered for {EventType}. Exiting with success.",
+                eventType.Name);
+            return true;
+        }
+
+        _eventHandlers[eventType.Name].Remove(handlerType);
+
+        if (_eventHandlers[eventType.Name].Count == 0)
+        {
+            var channel = _connectionManager.GetOrCreateChannel();
+
+            if (channel is null)
+            {
+                _logger.LogError("Couldn't unsubscribe to {EventType}, couldn't get channel.", eventType.Name);
+                return false;
+            }
+            
+            UnbindQueue(channel, eventType.Name);
+
+            _eventHandlers.Remove(eventType.Name);
+            _eventTypes.Remove(eventType);
+
+            _logger.LogTrace("There are no handlers left for {EventType}.", eventType.Name);
+        }
+
+        return true;
     }
 
     public void Dispose()
@@ -130,6 +166,11 @@ public class EventBusRabbitMQ : IEventBus, IDisposable
     {
         channel.QueueDeclare(_queueName, true, false, false, null);
         channel.QueueBind(_queueName, BrokerName, eventName);
+    }
+
+    private void UnbindQueue(IModel channel, string eventName) 
+    {
+        channel.QueueUnbind(_queueName, BrokerName, eventName);
     }
 
     private void StartEventConsume(IModel channel)
@@ -162,14 +203,24 @@ public class EventBusRabbitMQ : IEventBus, IDisposable
             .First();
 
         var integrationEvent = JsonSerializer.Deserialize(message, eventType);
+        if (integrationEvent is null)
+        {
+            _logger.LogWarning("Couldn't deserialize {EventType}.", @event.RoutingKey);
+            return;
+        }    
 
         foreach (var handler in handlers)
         {
-            await (Task)handler.GetMethod("Handle")!.Invoke(handler, new object[] { integrationEvent! })!;
+            using (var scope = _serviceProvider.CreateScope()) 
+            {
+                var handlerObject = ActivatorUtilities.CreateInstance(scope.ServiceProvider, handler);
+                await (Task)handler
+                    .GetMethod(nameof(IIntegrationEventHandler.Handle))!
+                    .Invoke(handlerObject, new object[] { integrationEvent })!;
+            }
         }
 
-        var channel = _connectionManager.GetChannel();
-
+        var channel = _connectionManager.GetOrCreateChannel();
         channel!.BasicAck(@event.DeliveryTag, false);
     }
 }
