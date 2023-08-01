@@ -1,10 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace OfferService.Models;
 
-public class OfferModel
+public class OfferPhoto
 {
     [Key]
     [MaxLength(128)]

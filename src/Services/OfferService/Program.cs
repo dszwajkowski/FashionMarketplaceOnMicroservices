@@ -1,4 +1,5 @@
 using FluentValidation;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 using OfferService.Configuration;
 using OfferService.ConfigureServices;
@@ -29,6 +30,7 @@ try
     builder.Services.ConfigureRabbitMQ(builder.Configuration);
 
     ValidatorOptions.Global.DefaultRuleLevelCascadeMode = CascadeMode.Stop;
+    TypeAdapterConfig.GlobalSettings.Default.NameMatchingStrategy(NameMatchingStrategy.IgnoreCase);
 
     builder.Host.UseSerilog();
 
@@ -40,6 +42,7 @@ try
         app.UseMigrationsEndPoint();
         app.UseSwagger();
         app.UseSwaggerUI();
+        app.MigrateDatabase();
     }
     else
     {
@@ -47,7 +50,6 @@ try
         app.UseHsts();
     }
 
-    app.MigrateDatabase();
 
     app.UseHttpsRedirection();
     app.UseStaticFiles();

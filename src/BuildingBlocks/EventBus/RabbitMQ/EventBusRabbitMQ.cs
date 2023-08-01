@@ -207,20 +207,32 @@ public class EventBusRabbitMQ : IEventBus, IDisposable
         {
             _logger.LogWarning("Couldn't deserialize {EventType}.", @event.RoutingKey);
             return;
-        }    
+        }
+
+        bool ack = true;
 
         foreach (var handler in handlers)
         {
             using (var scope = _serviceProvider.CreateScope()) 
+            try
             {
                 var handlerObject = ActivatorUtilities.CreateInstance(scope.ServiceProvider, handler);
                 await (Task)handler
                     .GetMethod(nameof(IIntegrationEventHandler.Handle))!
                     .Invoke(handlerObject, new object[] { integrationEvent })!;
-            }
+
+            } 
+            catch (Exception ex) 
+            {
+                _logger.LogError(ex, "Handler exception for {EventType}.", @event.RoutingKey);
+                ack = false;
+            }  
         }
 
-        var channel = _connectionManager.GetOrCreateChannel();
-        channel!.BasicAck(@event.DeliveryTag, false);
+        if (ack) 
+        {
+            var channel = _connectionManager.GetOrCreateChannel();
+            channel!.BasicAck(@event.DeliveryTag, false);
+        }
     }
 }

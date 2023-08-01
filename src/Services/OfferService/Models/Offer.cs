@@ -9,8 +9,8 @@ public class Offer
     [MaxLength(128)]
     public Ulid Id { get; set; }
     [Required]
-    //[ForeignKey(nameof(User))]
-    public Guid CreatorId { get; set; }
+    [ForeignKey(nameof(User))]
+    public Guid UserId { get; set; }
     [Required]
     public string Category { get; set; } = null!;
     [Required]
@@ -29,6 +29,6 @@ public class Offer
     [Required]
     public bool Visible { get; set; } = true;
 
-    //public virtual User User { get; set; } = null!;
-    public virtual ICollection<OfferModel> Photos { get; set; } = null!;
+    public virtual User User { get; set; } = null!;
+    public virtual ICollection<OfferPhoto> Photos { get; set; } = null!;
 }

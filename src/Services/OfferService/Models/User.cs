@@ -19,5 +19,5 @@ public class User
     [Required]
     public string Email { get; set; } = null!;
     [MaxLength(15)]
-    public string Phone { get; set; } = null!;
+    public string PhoneNumber { get; set; } = null!;
 }

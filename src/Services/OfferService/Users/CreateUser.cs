@@ -1,4 +1,8 @@
 ﻿using EventBus;
+using Mapster;
+using Microsoft.EntityFrameworkCore.Design;
+using OfferService.Data;
+using OfferService.Models;
 
 namespace OfferService.Users;
 
@@ -13,11 +17,24 @@ public static class CreateUser
         public string? PhoneNumber { get; init; }
     }
 
-    public class EventHandler : IIntegrationEventHandler
+    public class CreatedUserEventHandler : IIntegrationEventHandler
     {
-        public Task Handle(IntegrationEvent integrationEvent)
+        private readonly ApplicationDbContext _dbContext;
+
+        public CreatedUserEventHandler(ApplicationDbContext dbContext)
         {
-            throw new NotImplementedException();
+            _dbContext = dbContext;
+        }
+
+        public async Task Handle(IntegrationEvent integrationEvent)
+        {
+            var user = integrationEvent.Adapt<User>();
+            await _dbContext.Users.AddAsync(user);
+            if (_dbContext.SaveChanges() == 0)
+            {
+                // todo custom exception for handler fails
+                throw new OperationException("Couldn't save user.");
+            }
         }
     }
 }

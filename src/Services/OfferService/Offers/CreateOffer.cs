@@ -7,6 +7,7 @@ public static class CreateOffer
     public record Request(
         string Title,
         string Category,
+        Guid UserId,
         string Description,
         decimal Price);
 
@@ -23,6 +24,10 @@ public static class CreateOffer
             RuleFor(x => x.Price)
                 .NotEmpty()
                 .GreaterThan(0);
+            RuleFor(x => x.Category)
+                .NotEmpty();
+            RuleFor(x => x.UserId)
+                .NotEmpty();
         }
     }
 

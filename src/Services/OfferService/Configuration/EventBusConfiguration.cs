@@ -47,7 +47,7 @@ internal static class EventBusConfiguration
             }
             else
             {
-                throw new InvalidOperationException("Can't register event handler, there is no EventBus service.");
+                throw new InvalidOperationException("Can't register event handlers, there is no EventBus service.");
             }
         }
     }
