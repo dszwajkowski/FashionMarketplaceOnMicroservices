@@ -2,6 +2,14 @@
 
 namespace OfferService.Endpoints.Filters;
 
+public static class TokenValidator
+{
+    public static void AddTokenValidator(this RouteHandlerBuilder builder)
+    {
+        builder.AddEndpointFilter<TokenValidationFilter>();
+    }
+}
+
 public class TokenValidationFilter : IEndpointFilter
 {
     private readonly IGrpcIdentityService _identityService;

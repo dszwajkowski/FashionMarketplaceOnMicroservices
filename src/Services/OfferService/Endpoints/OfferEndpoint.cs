@@ -15,9 +15,9 @@ public class OfferEndpoint : IEndpoint
         group.MapGet("/{id}", GetById);
         group.MapGet("", GetWithFilters);
         group.MapPost("", Create)
-            .AddEndpointFilter<TokenValidationFilter>();
+            .AddTokenValidator();
         group.MapPut("", Update)
-            .AddEndpointFilter<TokenValidationFilter>();
+            .AddTokenValidator();
     }
 
     internal async Task<IResult> GetById(IOfferRepository offerRepository, [FromRoute] string id, CancellationToken cancellationToken)
