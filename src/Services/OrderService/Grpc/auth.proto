@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option csharp_namespace = "OrderService";
+
+service GrpcAuth {
+    rpc ValidateToken (ValidateTokenRequest) returns (TokenValidationResponse);
+}
+
+message ValidateTokenRequest {
+    string token = 1;
+    string serviceName = 2;
+}
+
+message TokenValidationResponse {
+    bool isValid = 1;
+}
