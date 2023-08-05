@@ -116,7 +116,7 @@ public class EndpointTests
     public async Task CreateOffer_ReturnNewOfferId_OfferCreated()
     {
         // Arrange
-        var request = new CreateOffer.Request("test offer", "T-Shirts", "testing test offer 123", 20);
+        var request = new CreateOffer.Request("test offer", "T-Shirts", Guid.NewGuid(), "testing test offer 123", 20);
         var cancellationToken = CancellationToken.None;
         var id = Ulid.NewUlid();
         _offerRepositoryMock.Setup(x => x.CreateOfferAsync(It.IsAny<Offer>(), cancellationToken))
@@ -138,7 +138,7 @@ public class EndpointTests
     public async Task CreateOffer_ReturnValidationError_WhenRequestNotValid()
     {
         // Arrange
-        var request = new CreateOffer.Request("", "", "", 0);
+        var request = new CreateOffer.Request("", "", Guid.NewGuid(), "", 0);
 
         // Act
         var result = await _offerEndpoint.Create(_offerRepositoryMock.Object, request, CancellationToken.None) as BadRequest<HttpErrorBody>;
@@ -154,7 +154,7 @@ public class EndpointTests
     public async Task CreateOffer_ReturnProblem_WhenOfferNotSaved()
     {
         // Arrange
-        var request = new CreateOffer.Request("test offer", "T-Shirts", "testing test offer 123", 20);
+        var request = new CreateOffer.Request("test offer", "T-Shirts", Guid.NewGuid(), "testing test offer 123", 20);
         var cancellationToken = CancellationToken.None;
         _offerRepositoryMock.Setup(x => x.CreateOfferAsync(It.IsAny<Offer>(), cancellationToken))
             .ReturnsAsync(Ulid.NewUlid());
