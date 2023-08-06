@@ -1,4 +1,6 @@
 ﻿using OrderService.Grpc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace OrderService.Endpoints.Filters;
 
@@ -40,6 +42,10 @@ public class TokenValidationFilter : IEndpointFilter
         {
             return Results.Unauthorized();
         }
+
+        var tokenInstance = new JwtSecurityTokenHandler()
+            .ReadJwtToken(token);
+        context.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(tokenInstance.Claims));
 
         return await next(context);
     }

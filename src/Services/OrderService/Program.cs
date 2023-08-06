@@ -1,5 +1,6 @@
 using OrderService.Configuration;
 using OrderService.ConfigureServices;
+using OrderService.Data;
 using OrderService.Grpc;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,7 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwagger();
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new NullReferenceException("Connection string 'DefaultConnection' not found.");
+builder.Services.AddDatabase(connectionString);
 builder.Services.AddScoped<IGrpcIdentityService, GrpcIdentityService>();
+builder.Services.ConfigureRabbitMQ(builder.Configuration);
 
 var app = builder.Build();
 
@@ -16,6 +20,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.MigrateDatabase();
 }
 else
 {
@@ -24,6 +29,13 @@ else
 }
 
 app.UseHttpsRedirection();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetService<ApplicationDbContext>()
+        ?? throw new InvalidOperationException("Couldn't seed database, dbcontext is null.");
+    SeedDatabase.SeedDb(dbContext);
+}
 
 app.AddEndpoints();
 
