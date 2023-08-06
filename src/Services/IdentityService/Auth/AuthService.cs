@@ -131,13 +131,14 @@ internal class AuthService : IAuthService
 
         var subjects = new ClaimsIdentity(new[]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.UserName!),
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id!),
             new Claim(JwtRegisteredClaimNames.Email, user.Email!),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             // RFC7519 - GivenName: Given name(s) or first name(s)
             new Claim(JwtRegisteredClaimNames.GivenName, user.FirstName!),
             // RFC7519 - FamilyName: Surname(s) or last name(s)
             new Claim(JwtRegisteredClaimNames.FamilyName, user.SecondName!),
+            new Claim("nickname", user.UserName!)
         });
 
         if (user.PhoneNumber is not null)
