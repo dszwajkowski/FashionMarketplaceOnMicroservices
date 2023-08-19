@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  identityservice:
+    image: ${DOCKER_REGISTRY-}identityservice
+    build:
+      context: .
+      dockerfile: src/Services/IdentityService/Dockerfile
+    depends_on:
+      - postgres
+      - rabbitmq
+      - seq
+
+  offerservice:
+    image: ${DOCKER_REGISTRY-}offerservice
+    build:
+      context: .
+      dockerfile: src/Services/OfferService/Dockerfile
+    depends_on:
+      - postgres
+      - rabbitmq
+      - seq
+      - identityservice
+  
+  postgres:
+    image: postgres:latest
+    
+  rabbitmq:
+    image: rabbitmq:management
+
+  seq:
+    image: datalust/seq:latest

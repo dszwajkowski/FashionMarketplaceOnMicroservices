@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  identityservice:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=
+      - ConnectionStrings__DefaultConnection=Server=postgres;Port=5432;Userid=postgres;Password=admin;Database=IdentityService_dev.db
+      - Serilog__SeqUrl=http://seq:5341
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Client=IdentityService
+      - Ports__Http=80
+      - Ports__Grpc=81
+      - Kestrel__Endpoints__Http__Url=http://identityservice:80
+      - Kestrel__Endpoints__Grpc__Url=http://identityservice:81
+    ports:
+      - "5001:80"
+      - "6001:81"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+  offerservice:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=postgres;Port=5432;Userid=postgres;Password=admin;Database=OfferService_dev.db
+      - Serilog__SeqUrl=http://seq:5341
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Client=OfferService
+      - GrpcIdentityService=http://identityservice:81
+    ports:
+      - "5002:80"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+  postgres:
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=admin
+    ports:
+      - "5432:5432"
+  rabbitmq:
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+  seq:
+    environment:
+      - ACCEPT_EULA=Y
+    ports:
+      - "5341:80"

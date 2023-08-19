@@ -1,6 +1,6 @@
 ﻿using OrderService.Endpoints;
 
-namespace OrderService.ConfigureServices;
+namespace OrderService.Configuration;
 
 internal static class EndpointsConfiguration
 {

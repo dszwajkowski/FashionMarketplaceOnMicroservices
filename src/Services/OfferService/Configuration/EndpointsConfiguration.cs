@@ -1,6 +1,6 @@
 ﻿using OfferService.Endpoints;
 
-namespace OfferService.ConfigureServices;
+namespace OfferService.Configuration;
 
 internal static class EndpointsConfiguration
 {

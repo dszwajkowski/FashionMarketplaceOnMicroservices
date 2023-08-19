@@ -1,6 +1,6 @@
 ﻿using Microsoft.OpenApi.Models;
 
-namespace OfferService.ConfigureServices;
+namespace OfferService.Configuration;
 
 internal static class SwaggerConfiguration
 {

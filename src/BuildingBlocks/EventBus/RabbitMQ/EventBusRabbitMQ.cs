@@ -184,6 +184,8 @@ public class EventBusRabbitMQ : IEventBus, IDisposable
 
     private async Task ProcessEvent(object sender, BasicDeliverEventArgs @event)
     {
+        _logger.LogTrace("Received event {EventType} from RabbitMQ.", @event.RoutingKey);
+        
         if (!_eventHandlers.ContainsKey(@event.RoutingKey))
         {
             _logger.LogWarning("Not subscibed to {EventType}.", @event.RoutingKey);
@@ -213,6 +215,9 @@ public class EventBusRabbitMQ : IEventBus, IDisposable
 
         foreach (var handler in handlers)
         {
+            _logger.LogTrace("Consuming event {EventType} with {Handler}.", 
+                @event.RoutingKey, handler.Name);
+            
             using (var scope = _serviceProvider.CreateScope()) 
             try
             {

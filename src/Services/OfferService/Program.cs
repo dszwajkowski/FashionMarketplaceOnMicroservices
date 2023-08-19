@@ -2,7 +2,6 @@ using FluentValidation;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 using OfferService.Configuration;
-using OfferService.ConfigureServices;
 using OfferService.Grpc;
 using OfferService.Offers;
 using Serilog;
@@ -19,7 +18,7 @@ try
     Log.Information("Starting OfferService.");
 
     // Add services to the container.
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new NullReferenceException("Connection string 'DefaultConnection' not found.");
     builder.Services.AddDatabase(connectionString);
     builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -49,13 +48,6 @@ try
         // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
         app.UseHsts();
     }
-
-
-    app.UseHttpsRedirection();
-    app.UseStaticFiles();
-
-    app.UseRouting();
-
     app.AddEndpoints();
 
     app.RegisterEventHandlers();
