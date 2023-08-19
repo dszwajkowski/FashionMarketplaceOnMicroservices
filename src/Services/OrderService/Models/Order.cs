@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Mapster;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace OrderService.Models;
@@ -23,6 +24,8 @@ public class Order
     public int PaymentMethodId { get; set; }
     public DateTime? PaymentDate { get; set; }
 
+    [AdaptIgnore]
     public virtual OrderStatus Status { get; set; } = null!;
+    [AdaptIgnore]
     public virtual PaymentMethod PaymentMethod { get; set; } = null!;
 }

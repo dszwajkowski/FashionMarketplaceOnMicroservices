@@ -1,5 +1,6 @@
+using FluentValidation;
+using Mapster;
 using OrderService.Configuration;
-using OrderService.ConfigureServices;
 using OrderService.Data;
 using OrderService.Grpc;
 
@@ -12,6 +13,9 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDatabase(connectionString);
 builder.Services.AddScoped<IGrpcIdentityService, GrpcIdentityService>();
 builder.Services.ConfigureRabbitMQ(builder.Configuration);
+
+ValidatorOptions.Global.DefaultRuleLevelCascadeMode = CascadeMode.Stop;
+TypeAdapterConfig.GlobalSettings.Default.NameMatchingStrategy(NameMatchingStrategy.IgnoreCase);
 
 var app = builder.Build();
 

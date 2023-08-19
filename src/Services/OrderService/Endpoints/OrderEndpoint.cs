@@ -18,8 +18,8 @@ public class OrderEndpoint : IEndpoint
         var group = app.MapGroup("order");
         group.MapPost("", Create)
             .AddTokenValidator();
-        //group.MapGet("", GetUsersOrders)
-       //     .AddTokenValidator();
+        group.MapGet("", GetUsersOrders)
+            .AddTokenValidator();
         group.MapGet("{id}", GetById)
             .AddTokenValidator();
     }
@@ -33,6 +33,9 @@ public class OrderEndpoint : IEndpoint
     {
         // todo extract logic to diffrent methods
 
+        var test = TypeAdapterConfig<GetOrders.Response, Order>
+            .NewConfig();
+
         var validator = new CreateOrder.RequestValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
         if (!validationResult.IsValid)
@@ -41,8 +44,9 @@ public class OrderEndpoint : IEndpoint
                 new Result<CreateOrder.Response>(ErrorType.Validation, validationResult.Errors.Select(x => x.ErrorMessage)));
         }
 
-        // todo fix enum mapping
+        // todo refactor - add mapping config or map manually
         var order = request.Adapt<Order>();
+        order.PaymentMethodId = (int)Enum.Parse<PaymentMethods>(request.PaymentMethod, true);
 
         var sub = httpContext.User.Claims
             .FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Sub)?.Value;
@@ -115,11 +119,11 @@ public class OrderEndpoint : IEndpoint
 
     internal async Task<IResult> GetUsersOrders(
         ApplicationDbContext dbContext,
-        HttpContext httpContext,
-        GetOrder.Request request,
-        [FromBody]CancellationToken cancellationToken)
+        Guid userId,
+        CancellationToken cancellationToken)
     {
-        var validator = new GetOrder.RequestValidator();
+        var request = new GetOrders.Request(userId);
+        var validator = new GetOrders.RequestValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
         if (!validationResult.IsValid)
         {
@@ -127,6 +131,10 @@ public class OrderEndpoint : IEndpoint
                 new Result<GetOrder.Response>(ErrorType.Validation, validationResult.Errors.Select(x => x.ErrorMessage)));
         }
 
-        return Results.Ok();
+        var orders = dbContext.Orders
+            .Where(x => x.UserId == request.UserId);
+        var ordersDto = orders.Adapt<List<GetOrders.Response>>();
+
+        return Results.Ok(ordersDto);
     }
 }

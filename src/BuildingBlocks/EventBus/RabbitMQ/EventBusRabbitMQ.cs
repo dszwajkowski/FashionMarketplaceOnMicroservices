@@ -224,7 +224,7 @@ public class EventBusRabbitMQ : IEventBus, IDisposable
                 var handlerObject = ActivatorUtilities.CreateInstance(scope.ServiceProvider, handler);
                 await (Task)handler
                     .GetMethod(nameof(IIntegrationEventHandler.Handle))!
-                    .Invoke(handlerObject, new object[] { integrationEvent })!;
+                    .Invoke(handlerObject, new[] { integrationEvent })!;
 
             } 
             catch (Exception ex) 
